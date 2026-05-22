@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEIST — BY NIKIL</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=clash-display@600&f[]=satoshi@400,500&display=swap" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --black: #080808;
+            --black-light: #121212;
+            --white: #F4F0EA;
+            --white-dim: #A6A19C;
+            --red: #E6253A;
+            --red-glow: rgba(230, 37, 58, 0.3);
+            --gold: #D4AF37;
+        }
+
+        body {
+            font-family: 'Satoshi', sans-serif;
+            background: var(--black);
+            color: var(--white);
+            overflow-x: hidden;
+        }
+        p { font-weight: 400; line-height: 1.7; }
+        ::selection { background: var(--red); color: var(--white); }
+
+        /* ===== GPU-ACCELERATED CSS HOOKS ===== */
+        .hero-bg, .hero-bg img, .hero-content, .hero-title, .bg-blob, .gallery-item img, .collection-item img, .marquee-track {
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        /* ===== CUSTOM SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: rgba(244, 240, 234, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--red); }
+        * { scrollbar-width: thin; scrollbar-color: rgba(244, 240, 234, 0.2) var(--black); }
+
+        /* ===== MUSIC BUTTON ===== */
+        #music-btn {
+            position: fixed; bottom: 36px; right: 36px; z-index: 9998;
+            background: rgba(8, 8, 8, 0.7); border: 1px solid rgba(230, 37, 58, 0.4);
+            color: var(--white); display: flex; align-items: center; gap: 8px;
+            padding: 10px 18px; border-radius: 2px; cursor: pointer;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+            font-family: 'Satoshi', sans-serif; font-size: 10px;
+            letter-spacing: 3px; text-transform: uppercase;
+        }
+        #music-btn:hover {
+            border-color: var(--red); background: rgba(230, 37, 58, 0.15);
+            transform: translateY(-2px); box-shadow: 0 8px 24px rgba(230, 37, 58, 0.2);
+        }
+        #music-icon { font-size: 14px; animation: musicPulse 1.5s ease-in-out infinite; }
+        #music-btn.muted #music-icon { animation: none; opacity: 0.4; }
+        #music-btn.muted #music-label { opacity: 0.4; }
+        @keyframes musicPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        /* ===== GRAIN OVERLAY ===== */
+        .grain-overlay {
+            position: fixed; inset: 0; width: 100%; height: 100%;
+            z-index: 10000; pointer-events: none; opacity: 0.04;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cfilter id='noise' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='3' stitchTiles='stitch' type='fractalNoise'%3E%3C/feTurbulence%3E%3C/filter%3E%3Crect x='0' y='0' width='100%25' height='100%25' filter='url(%23noise)'%3E%3C/rect%3E%3C/svg%3E");
+        }
+
+        /* ===== LOADER ===== */
+        .loader {
+            position: fixed; inset: 0; background: var(--black);
+            z-index: 99999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 32px;
+        }
+        .loader-title {
+            font-family: 'Cormorant Garamond', serif; font-size: 28px;
+            letter-spacing: 10px; text-transform: uppercase; color: var(--white);
+            margin-bottom: 12px; margin-right: -10px;
+        }
+        .loader-text {
+            font-family: 'Cormorant Garamond', serif; font-size: 20px;
+            font-weight: 500; letter-spacing: 10px; text-transform: uppercase;
+            color: var(--red); margin-right: -24px; margin-top: 8px;
+        }
+        .loader-line {
+            width: 120px; height: 1px; background: rgba(244, 240, 234, 0.08);
+            position: relative; overflow: hidden;
+        }
+        .loader-line::after {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%; background: var(--white);
+            animation: loaderSlide 2s cubic-bezier(0.16,1,0.3,1) infinite;
+        }
+        @keyframes loaderSlide {
+            0% { left: -100%; } 50%, 100% { left: 100%; }
+        }
+
+        /* ===== BLUR BACKGROUND ===== */
+        .bg-layer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-2;overflow:hidden;pointer-events:none}
+        .bg-blob{position:absolute;border-radius:50%;filter:blur(160px);opacity:.4;will-change:transform;transform:translateZ(0)}
+        .bg-blob.b1{width:600px;height:600px;background:var(--red-glow);top:-15%;left:-10%;animation:blobFloat 25s ease-in-out infinite alternate;}
+        .bg-blob.b2{width:500px;height:500px;background:rgba(212, 175, 55, 0.3);bottom:-10%;right:-15%;animation:blobFloat 30s ease-in-out infinite alternate; animation-delay:-8s;}
+        .bg-blob.b3{width:400px;height:400px;background:rgba(244, 240, 234, 0.2);top:50%;left:40%;animation:blobFloat 20s ease-in-out infinite alternate; animation-delay:-16s;}
+        @keyframes blobFloat{
+            0%{transform:translate(0,0) scale(1)}
+            33%{transform:translate(40px,-50px) scale(1.1)}
+            66%{transform:translate(-30px,40px) scale(.9)}
+            100%{transform:translate(20px,-30px) scale(1.05)}
+        }
+
+        /* ===== NAVIGATION ===== */
+        .nav {
+            position: fixed; top: 0; left: 50%; width: 100%;
+            transform: translateX(-50%); padding: 32px 60px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000; transition: all 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .nav.scrolled {
+            top: 20px; width: 95%; max-width: 1400px; padding: 20px 48px;
+            border-radius: 16px; background: rgba(18, 18, 18, 0.7);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+        .nav-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; letter-spacing: 6px; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 48px; list-style: none; }
+        .nav-links a { color: var(--white); text-decoration: none; font-size: 11px; font-weight: 400; letter-spacing: 3px; text-transform: uppercase; position: relative; padding: 4px 0; opacity: 0.6; transition: opacity 0.4s; }
+        .nav-links a:hover, .nav-links a.active { opacity: 1; }
+        .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--white); transition: width 0.6s cubic-bezier(0.16,1,0.3,1); }
+        .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+        .nav-menu-btn { display: none; width: 32px; height: 32px; flex-direction: column; align-items: center; justify-content: center; gap: 5px; z-index: 1001; cursor: pointer; }
+        .nav-menu-btn span { width: 18px; height: 1px; background: var(--white); transition: all 0.4s; }
+        .nav-menu-btn.active span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+        .nav-menu-btn.active span:nth-child(2) { opacity: 0; }
+        .nav-menu-btn.active span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+        /* ===== SIDE DOTS ===== */
+        .side-dots { position: fixed; left: 60px; top: 50%; transform: translateY(-50%); z-index: 100; display: flex; flex-direction: column; gap: 16px; }
+        .side-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(244, 240, 234, 0.2); transition: all 0.6s cubic-bezier(0.16,1,0.3,1); }
+        .side-dot.active { background: var(--red); height: 24px; border-radius: 2px; }
+
+        /* ===== SECTIONS ===== */
+        .section { position: relative; min-height: 100vh; width: 100%; overflow: hidden; display: flex; align-items: center; }
+        .hero::after, .info-section::after, .discovery-section::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 40vh; background: linear-gradient(to top, var(--black) 5%, transparent); pointer-events: none; }
+        .hero::after { z-index: 4; }
+        .info-section::after, .discovery-section::after { z-index: 3; }
+        .info-section::before, .discovery-section::before { content: ''; position: absolute; top: -1px; left: 0; width: 100%; height: 40vh; background: linear-gradient(to bottom, var(--black) 5%, transparent); pointer-events: none; z-index: 3; }
+
+        /* ===== HERO ===== */
+        .hero { position: relative; min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .hero-bg { position: absolute; inset: 0; z-index: 1; transform-origin: center center; will-change: transform; }
+        .hero-bg img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6) contrast(1.2); }
+        .hero-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 30%, var(--black) 100%); z-index: 2; pointer-events: none; }
+        .hero-overlay-lines { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+        .hero-overlay-lines::before, .hero-overlay-lines::after { content: ''; position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(244, 240, 234, 0.04); }
+        .hero-overlay-lines::before { left: 25%; } .hero-overlay-lines::after { left: 75%; }
+        .hero-content { position: relative; z-index: 5; text-align: center; max-width: 900px; padding: 0 60px; }
+        .hero-title { font-family: 'Clash Display', sans-serif; font-size: clamp(48px, 8vw, 110px); font-weight: 600; line-height: 1.05; letter-spacing: 0.02em; margin-bottom: 40px; text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6); text-transform: uppercase; }
+        .hero-title span { display: block; font-weight: 600; color: var(--red); }
+        .hero-desc { font-size: 14px; line-height: 1.9; color: var(--white); max-width: 420px; margin: 0 auto 48px; font-weight: 400; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+        .hero-cta { display: inline-flex; align-items: center; gap: 16px; padding: 16px 40px; border: 1px solid rgba(244, 240, 234, 0.2); color: var(--white); text-decoration: none; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; position: relative; overflow: hidden; transition: border-color 0.6s; }
+        .hero-cta::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: var(--red); transition: left 0.7s cubic-bezier(0.16,1,0.3,1); z-index: -1; }
+        .hero-cta:hover::before { left: 0; } .hero-cta:hover { border-color: var(--red); }
+
+        .scroll-hint { position: absolute; bottom: 48px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0; }
+        .scroll-chevron { color: var(--white); animation: chevronBounce 2s ease-in-out infinite; }
+        .scroll-hint-line { width: 1px; height: 60px; background: linear-gradient(to bottom, var(--red), transparent); animation: scrollPulse 2s ease-in-out infinite; transform-origin: top; }
+        @keyframes scrollPulse { 0%, 100% { transform: scaleY(0.2); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
+        @keyframes chevronBounce { 0%, 100% { transform: translateY(-4px); opacity: 0.5; } 50% { transform: translateY(4px); opacity: 1; } }
+
+        /* ===== INFO SECTION ===== */
+        .info-section { position: relative; min-height: 100vh; width: 100%; display: flex; align-items: center; overflow: hidden; background: var(--black); }
+        .info-bg { position: absolute; inset: 0; z-index: 1; transform-origin: center center;}
+        .info-bg img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5) contrast(1.2) saturate(1.1); }
+        .info-vignette { position: absolute; inset: 0; background: linear-gradient(to right, var(--black) 0%, transparent 50%, var(--black) 100%); z-index: 2; pointer-events: none; }
+        .info-content { position: relative; z-index: 5; padding: 0 60px; max-width: 600px; margin-left: 8vw; }
+        .info-label { font-size: 10px; letter-spacing: 6px; text-transform: uppercase; color: var(--red); margin-bottom: 32px; opacity: 0; }
+        .info-title { font-family: 'Clash Display', sans-serif; font-size: clamp(32px, 4vw, 52px); font-weight: 600; line-height: 1.15; margin-bottom: 24px; opacity: 0; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); text-transform: uppercase; letter-spacing: 0.03em; }
+        .info-text { font-size: 13px; line-height: 1.9; color: var(--white); margin-bottom: 32px; font-weight: 400; opacity: 0; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+        .info-stat { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 5vw, 56px); font-weight: 300; margin-bottom: 8px; opacity: 0; }
+        .info-stat-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--white-dim); margin-bottom: 32px; opacity: 0; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+        .info-subtitle { font-family: 'Cormorant Garamond', serif; font-size: clamp(24px, 3vw, 36px); font-weight: 400; font-style: italic; margin-bottom: 16px; opacity: 0; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+
+        /* ===== DISCOVERY SECTION ===== */
+        .discovery-section { position: relative; min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--black); }
+        .discovery-bg { position: absolute; inset: 0; z-index: 1; transform-origin: center center; }
+        .discovery-bg img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5) contrast(1.2); }
+        .discovery-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 500px; border: 2px solid rgba(244, 240, 234, 0.15); border-radius: 50%; z-index: 2; pointer-events: none; }
+        .discovery-ring::before { content: ''; position: absolute; inset: -20px; border: 1px solid rgba(244, 240, 234, 0.05); border-radius: 50%; }
+        .discovery-content { position: relative; z-index: 5; text-align: center; max-width: 700px; padding: 0 60px; }
+        .discovery-title { font-family: 'Clash Display', sans-serif; font-size: clamp(36px, 6vw, 72px); font-weight: 600; line-height: 1.1; letter-spacing: 0.02em; margin-bottom: 40px; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); }
+        .discovery-text { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; text-align: left; }
+        .discovery-text p { font-size: 12px; line-height: 1.9; color: var(--white); font-weight: 400; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); }
+
+        /* ===== GALLERY SECTION ===== */
+        .gallery-section { padding: 160px 60px; background: linear-gradient(to bottom, var(--black) 0%, var(--black-light) 50%, var(--black) 100%); position: relative; overflow: hidden; }
+        .gallery-header { text-align: center; margin-bottom: 80px; }
+        .gallery-header p { font-size: 10px; letter-spacing: 6px; text-transform: uppercase; color: var(--red); margin-bottom: 16px; }
+        .gallery-header h2 { font-family: 'Clash Display', sans-serif; font-size: clamp(36px, 5vw, 64px); font-weight: 600; letter-spacing: 0.03em; }
+        .gallery-container { display: flex; gap: 16px; height: 65vh; min-height: 450px; max-width: 1200px; margin: 0 auto; transform-origin: center center; }
+        .gallery-item { position: relative; flex: 1; border-radius: 16px; overflow: hidden; transition: flex 0.8s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
+        .gallery-item.active { flex: 5; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s; filter: grayscale(40%) contrast(1.2) brightness(0.8); }
+        .gallery-item:hover img, .gallery-item.active img { filter: grayscale(0%) contrast(1.2) brightness(1.1); }
+        .gallery-item.active img { transform: scale(1.05); }
+        .gallery-item-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 10, 10, 0.95) 0%, transparent 60%); opacity: 0; transition: opacity 0.8s; }
+        .gallery-item.active .gallery-item-overlay { opacity: 1; }
+        .gallery-item-info { position: absolute; bottom: 40px; left: 40px; opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); white-space: nowrap; }
+        .gallery-item.active .gallery-item-info { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+        .gallery-item-info h3 { font-family: 'Clash Display', sans-serif; font-size: 42px; font-weight: 600; letter-spacing: 0.02em; color: var(--white); margin-bottom: 8px; }
+        .gallery-item-info span { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--gold); }
+
+        /* ===== COLLECTIONS SECTION ===== */
+        .collections-section { position: relative; padding: 160px 60px; background: var(--black); }
+        .collections-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 80px; max-width: 1400px; margin-left: auto; margin-right: auto; }
+        .collections-header h2 { font-family: 'Clash Display', sans-serif; font-size: clamp(36px, 5vw, 64px); font-weight: 600; letter-spacing: 0.03em; }
+        .collections-header a { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--white-dim); text-decoration: none; display: flex; align-items: center; gap: 8px; transition: color 0.4s; }
+        .collections-header a:hover { color: var(--white); }
+        .collections-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1400px; margin: 0 auto; }
+        .collection-item { position: relative; aspect-ratio: 3/4; overflow: hidden; animation: floatAnim 6s ease-in-out infinite; border-radius: 12px; transform-origin: center center; }
+        .collection-item:nth-child(2) { animation-delay: -2s; }
+        .collection-item:nth-child(3) { animation-delay: -4s; }
+        @keyframes floatAnim { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }
+        .collection-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform; }
+        .collection-item:hover img { transform: scale(1.08); }
+        .buy-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4); filter: brightness(1.1); }
+        .collection-item-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 10, 10, 0.95) 0%, transparent 60%); display: flex; flex-direction: column; justify-content: flex-end; padding: 32px; }
+        .collection-item-name { font-family: 'Clash Display', sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0.03em; margin-bottom: 4px; }
+        .collection-item-season { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: var(--white-dim); }
+        .collection-item-brand { position: absolute; top: 24px; left: 24px; z-index: 2; font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; letter-spacing: 6px; text-transform: uppercase; color: var(--gold); }
+        .collection-quote { font-size: 11px; font-style: italic; color: rgba(244, 240, 234, 0.85); margin-top: 16px; line-height: 1.5; border-left: 2px solid var(--red); padding-left: 12px; }
+        .collection-quote span { color: var(--gold); font-style: normal; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; display: inline-block; margin-top: 6px; }
+
+        /* ===== MARQUEE ===== */
+        .marquee-section { padding: 100px 0; overflow: hidden; background: var(--black); }
+        .marquee-track { display: flex; width: max-content; animation: marquee 25s linear infinite; }
+        .marquee-item { font-family: 'Cormorant Garamond', serif; font-size: clamp(40px, 7vw, 90px); font-weight: 300; font-style: italic; color: transparent; -webkit-text-stroke: 1px rgba(244, 240, 234, 0.12); white-space: nowrap; padding: 0 48px; transition: color 0.6s, -webkit-text-stroke 0.6s; }
+        .marquee-item.red { color: var(--red); -webkit-text-stroke: 1px var(--red); }
+        .marquee-item.white { color: var(--white); -webkit-text-stroke: 1px var(--white); }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        /* ===== NEWSLETTER ===== */
+        .newsletter-section { padding: 160px 60px; text-align: center; margin: 0 auto; background: linear-gradient(to bottom, transparent 0%, rgba(230, 37, 58, 0.08) 40%, var(--black) 100%); display: flex; flex-direction: column; align-items: center; }
+        .newsletter-section > * { max-width: 600px; width: 100%; }
+        .newsletter-section h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(32px, 4vw, 48px); font-weight: 300; margin-bottom: 24px; }
+        .newsletter-section h2 + p { color: var(--white-dim); font-size: 14px; line-height: 1.8; margin-bottom: 48px; font-weight: 300; font-family: system-ui, sans-serif; }
+        .newsletter-form { display: flex; gap: 0; border-bottom: 1px solid rgba(244, 240, 234, 0.15); padding-bottom: 16px; }
+        .newsletter-form input { flex: 1; background: transparent; border: none; color: var(--white); font-size: 14px; font-family: 'Satoshi', sans-serif; outline: none; font-weight: 300; }
+        .newsletter-form input::placeholder { color: var(--white-dim); }
+        .newsletter-form button { background: transparent; border: none; color: var(--white); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; transition: color 0.4s; font-weight: 400; cursor: pointer; }
+        .newsletter-form button:hover { color: var(--red); }
+
+        /* ===== FOOTER ===== */
+        .footer { padding: 80px 60px 40px; background: rgba(18, 18, 18, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; max-width: 1400px; margin: 0 auto 80px; }
+        .footer-brand .logo { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 500; letter-spacing: 6px; margin-bottom: 24px; }
+        .footer-brand p { color: var(--white-dim); font-size: 13px; line-height: 1.8; max-width: 280px; font-weight: 300; }
+        .footer-col h4 { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; color: var(--white); font-weight: 400; }
+        .footer-col ul { list-style: none; }
+        .footer-col li { margin-bottom: 12px; }
+        .footer-col a { color: var(--white-dim); text-decoration: none; font-size: 13px; font-weight: 300; transition: color 0.4s; position: relative; }
+        .footer-col a::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1px; background: var(--red); transition: width 0.4s cubic-bezier(0.16,1,0.3,1); }
+        .footer-col a:hover { color: var(--white); }
+        .footer-col a:hover::after { width: 100%; }
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; padding-top: 40px; border-top: 1px solid rgba(244, 240, 234, 0.04); }
+        .footer-bottom p { font-size: 11px; color: var(--white-dim); letter-spacing: 1px; }
+        .social-links { display: flex; gap: 20px; }
+        .social-links a { color: var(--white-dim); transition: color 0.4s; }
+        .social-links a:hover { color: var(--red); }
+
+        /* ===== MADE BY BADGE ===== */
+        .made-by-glass { padding: 10px 24px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 100px; font-size: 10px; letter-spacing: 4px; color: var(--white); text-transform: uppercase; font-weight: 400; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); transition: all 0.4s ease; }
+        .made-by-glass:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); color: var(--gold); }
+
+        /* ===== THREE JS CANVAS ===== */
+        #particles-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0.4; }
+
+        /* ===== BACK TO TOP ===== */
+        .back-to-top { position: fixed; bottom: 40px; left: 40px; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--black), var(--red)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(230, 37, 58, 0.4); color: var(--white); display: flex; align-items: center; justify-content: center; z-index: 1000; cursor: pointer !important; opacity: 0; visibility: hidden; transform: translateY(20px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .back-to-top.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+        .back-to-top:hover { background: linear-gradient(135deg, var(--red), var(--black)); border-color: var(--red); transform: translateY(-4px) scale(1.05); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .collections-grid { grid-template-columns: repeat(2, 1fr); }
+            .discovery-text { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+            .nav { padding: 24px 32px; }
+            .nav.scrolled { padding: 16px 24px; }
+            .side-dots { left: 32px; }
+        }
+        @media (max-width: 768px) {
+            .nav-menu-btn { display: flex; }
+            .nav-links { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); flex-direction: column; justify-content: center; align-items: center; gap: 40px; opacity: 0; pointer-events: none; transition: all 0.5s ease; margin: 0; padding: 0; z-index: 1000; }
+            .nav-links.open { opacity: 1; pointer-events: auto; }
+            .nav-links a { font-size: 16px; letter-spacing: 6px; }
+            .hero-title { font-size: 15vw; }
+            .info-title, .discovery-title, .gallery-header h2, .collections-header h2 { font-size: clamp(34px, 10vw, 48px); }
+            .info-content { margin-left: 0; text-align: center; padding: 0 24px; max-width: 100%; }
+            .collections-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+            .collections-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; }
+            .collections-section, .newsletter-section, .gallery-section { padding: 120px 24px; }
+            .hero-content { padding: 0 24px; }
+            .discovery-content { padding: 0 24px; }
+            .gallery-container { flex-direction: column; height: 80vh; }
+            .gallery-item-info { bottom: 24px; left: 24px; }
+            .gallery-item-info h3 { font-size: 28px; }
+            .grain-overlay { display: none !important; }
+            .side-dots { display: none; }
+            .back-to-top { bottom: 24px; left: 24px; width: 44px; height: 44px; }
+            .footer-bottom { flex-direction: column; gap: 24px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Music -->
+    <audio id="bg-music" src="assets/hiest.mp3" loop preload="auto"></audio>
+
+    <!-- Music Toggle Button -->
+    <button id="music-btn" title="Toggle Music" aria-label="Toggle Music" class="muted">
+        <span id="music-icon">♪</span>
+        <span id="music-label">MUSIC</span>
+    </button>
+
+    <div class="grain-overlay"></div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div style="text-align: center;">
+            <div class="loader-title">LA CASA DE PAPEL</div>
+            <div class="loader-text">H E I S T</div>
+        </div>
+        <div class="loader-line"></div>
+    </div>
+
+    <div class="bg-layer">
+        <div class="bg-blob b1"></div>
+        <div class="bg-blob b2"></div>
+        <div class="bg-blob b3"></div>
+    </div>
+
+    <!-- Three.js Particles -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-logo">HEIST</div>
+        <ul class="nav-links">
+            <li><a href="#hero" class="active">Home</a></li>
+            <li><a href="#discovery">Event</a></li>
+            <li><a href="#gallery">Cast</a></li>
+            <li><a href="#collections">Collection</a></li>
+            <li><a href="#newsletter">Visit</a></li>
+        </ul>
+        <div class="nav-menu-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Side Dots -->
+    <div class="side-dots">
+        <div class="side-dot active" data-section="hero"></div>
+        <div class="side-dot" data-section="info"></div>
+        <div class="side-dot" data-section="discovery"></div>
+        <div class="side-dot" data-section="gallery"></div>
+        <div class="side-dot" data-section="collections"></div>
+    </div>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero" id="hero">
+        <div class="hero-bg">
+            <img src="assets/profile.jpg" alt="Hero" style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6) contrast(1.2);">
+        </div>
+        <div class="hero-vignette"></div>
+        <div class="hero-overlay-lines"></div>
+        <div class="hero-content">
+            <h1 class="hero-title">
+                LACA SA <br>
+                <span>DE PAPEL</span>
+            </h1>
+            <p class="hero-desc">
+                Where timeless sophistication meets contemporary edge. 
+                Crafted for those who command attention without seeking it.
+            </p>
+            <a href="#info" class="hero-cta">
+                Explore Collection
+                <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+            </a>
+        </div>
+        <div class="scroll-hint">
+            <div class="scroll-chevron">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="scroll-hint-line"></div>
+        </div>
+    </section>
+
+    <!-- ===== INFO SECTION ===== -->
+    <section class="info-section" id="info">
+        <div class="info-bg">
+            <img src="assets/lacasa.jpg" alt="La casa de papel">
+        </div>
+        <div class="info-vignette"></div>
+        <div class="info-content">
+            <p class="info-label">The Series</p>
+            <h2 class="info-title">La casa de <span style="color: var(--red);">papel</span></h2>
+            <p class="info-text">
+                In March 2026, the bank officially launched its Department of Experimentation and Laboratory of Applied Technologies (<span style="color: var(--red);">DELTA</span>). This specialized division focuses on driving digital transformation and integrating Artificial Intelligence (AI) applications safely into central banking operations and market monitoring.
+            </p>
+            <div class="info-stat" data-target="203">0</div>
+            <div class="info-stat-label">cm (83 in)</div>
+            <p class="info-text">
+                Lorem Ipsum is simply dummy text of the printing and typesetting industry. 
+                Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.
+            </p>
+            <h3 class="info-subtitle">Bank Of Spain</h3>
+            <p class="info-text">
+               The Bank of Spain (officially known as Banco de España) is the national central bank of Spain. Established in 1782 by King Charles III, it functions today as an integral member of the European Union's Eurosystem and the European Banking Supervision network
+            </p>
+        </div>
+    </section>
+
+    <!-- ===== DISCOVERY SECTION ===== -->
+    <section class="discovery-section" id="discovery">
+        <div class="discovery-bg">
+            <img src="assets/lcdp.jpg" alt="The Heist">
+        </div>
+        <div class="discovery-ring"></div>
+        <div class="discovery-content">
+            <h2 class="discovery-title">
+                An Unforgettable<br>
+                Symphony of<br>
+                <span style="color: var(--red);">Chaos</span>
+            </h2>
+            <div class="discovery-text">
+                <p>
+                    Money Heist <span style="color: var(--red);"> (originally titled La Casa de Papel)</span> is a global phenomenon created by Álex Pina. The Spanish crime thriller follows a mysterious mastermind known as "The Professor", who recruits eight highly skilled criminals to execute meticulously planned robberies at the Royal Mint of Spain and the Bank of Spain.
+                </p>
+                <p>
+                    one on the Royal Mint of Spain, and one on the Bank of Spain, told from the perspective of one of the robbers, Tokyo (Úrsula Corberó). The story is told in a real-time-like fashion and relies on an unreliable narrator, flashbacks, time-jumps, and hidden character motivations for complexity
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== GALLERY SECTION ===== -->
+    <section class="gallery-section" id="gallery">
+        <div class="gallery-header">
+            <p>The Masterminds</p>
+            <h2>Meet the Crew</h2>
+        </div>
+        <div class="gallery-container">
+            <div class="gallery-item active">
+                <img src="assets/Professor.jpg" alt="Professor">
+                <div class="gallery-item-overlay"></div>
+                <div class="gallery-item-info">
+                    <h3>Professor</h3>
+                    <span>The King</span>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <img src="assets/Dead.jpg" alt="Berlin">
+                <div class="gallery-item-overlay"></div>
+                <div class="gallery-item-info">
+                    <h3>Berlin</h3>
+                    <span>The Commander</span>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <img src="assets/nairobi.jpg" alt="Marseille / Nairobi">
+                <div class="gallery-item-overlay"></div>
+                <div class="gallery-item-info">
+                    <h3> Nairobi</h3>
+                    <span>The Operator</span>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <img src="assets/Rio.jpg" alt="Río">
+                <div class="gallery-item-overlay"></div>
+                <div class="gallery-item-info">
+                    <h3>Río</h3>
+                    <span>The Hacker</span>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <img src="assets/denver.jpg" alt="Denver">
+                <div class="gallery-item-overlay"></div>
+                <div class="gallery-item-info">
+                    <h3>Denver</h3>
+                    <span>The Brawler</span>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <img src="assets/tokyo.jpg" alt="Tokyo">
+                <div class="gallery-item-overlay"></div>
+                <div class="gallery-item-info">
+                    <h3>Tokyo</h3>
+                    <span>The Narrator</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MARQUEE ===== -->
+    <section class="marquee-section">
+        <div class="marquee-track">
+            <span class="marquee-item red">Timeless Elegance</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item white">Bold Statements</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item red">Pure Luxury</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item white">Modern Classic</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item red">Timeless Elegance</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item white">Bold Statements</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item red">Pure Luxury</span>
+            <span class="marquee-item">—</span>
+            <span class="marquee-item white">Modern Classic</span>
+            <span class="marquee-item">—</span>
+        </div>
+    </section>
+
+    <!-- ===== COLLECTIONS ===== -->
+    <section class="collections-section" id="collections">
+        <div class="collections-header">
+            <div>
+                <p style="font-size:10px;letter-spacing:6px;text-transform:uppercase;color:var(--red);margin-bottom:16px;">Latest Arrivals</p>
+                <h2>The Collections</h2>
+            </div>
+            <a href="#">
+                View All
+                <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i>
+            </a>
+        </div>
+        <div class="collections-grid">
+            <div class="collection-item">
+                <div class="collection-item-brand">H E I S T</div>
+                <img src="assets/collection1.jpg" alt="Collection 1">
+                <div class="collection-item-overlay">
+                    <h3 class="collection-item-name">BERLIN</h3>
+                    <span class="collection-item-season">2026</span>
+                    <p class="collection-quote">
+                        "Death can be the greatest opportunity of your life."<br>
+                        <span>— Berlin</span>
+                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px;">
+                        <span style="font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--gold); font-weight: 500;">Haute Couture</span>
+                        <button class="buy-btn" style="background: #FFD700; border: 1px solid #FFD700; color: #080808; font-weight: 700; padding: 8px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.4s; display: flex; align-items: center; gap: 8px; border-radius: 2px;">
+                            Vote Now
+                            <i data-lucide="star" style="width: 12px; height: 12px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="collection-item">
+                <div class="collection-item-brand">H E I S T</div>
+                <img src="assets/collection2.jpg" alt="Collection 2">
+                <div class="collection-item-overlay">
+                    <h3 class="collection-item-name">TOKYO</h3>
+                    <span class="collection-item-season">2026</span>
+                    <p class="collection-quote">
+                        "In the end, love is a good reason for everything to fall apart."<br>
+                        <span>— Tokyo</span>
+                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px;">
+                        <span style="font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--gold); font-weight: 500;">Avant-Garde</span>
+                        <button class="buy-btn" style="background: #FFD700; border: 1px solid #FFD700; color: #080808; font-weight: 700; padding: 8px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.4s; display: flex; align-items: center; gap: 8px; border-radius: 2px;">
+                            Vote Now
+                            <i data-lucide="star" style="width: 12px; height: 12px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="collection-item">
+                <div class="collection-item-brand">H E I S T</div>
+                <img src="assets/collection3.jpg" alt="Collection 3">
+                <div class="collection-item-overlay">
+                    <h3 class="collection-item-name">PROFESSOR</h3>
+                    <span class="collection-item-season">2026</span>
+                    <p class="collection-quote">
+                        "It didn't all work out the way we wanted... but we did achieve something."<br>
+                        <span>— The Professor</span>
+                    </p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px;">
+                        <span style="font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--gold); font-weight: 500;">Prêt-à-Porter</span>
+                        <button class="buy-btn" style="background: #FFD700; border: 1px solid #FFD700; color: #080808; font-weight: 700; padding: 8px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; transition: all 0.4s; display: flex; align-items: center; gap: 8px; border-radius: 2px;">
+                            Vote Now
+                            <i data-lucide="star" style="width: 12px; height: 12px;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== NEWSLETTER ===== -->
+    <section class="newsletter-section" id="newsletter">
+        <p style="font-size:10px;letter-spacing:6px;text-transform:uppercase;color:var(--red);margin-bottom:24px;">Stay Connected</p>
+        <h2>Join the Inner Circle</h2>
+        <p>Be the first to discover exclusive collections, private events, and limited-edition releases.</p>
+        <form class="newsletter-form">
+            <input type="email" placeholder="Enter your email address">
+            <button type="submit">
+                Subscribe
+                <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+            </button>
+        </form>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="logo">HEIST</div>
+                <p>Berlin's perspective on death as an opportunity rather than an end is a striking and unconventional viewpoint that encapsulates his complex character. Despite his terminal illness, Berlin maintains an unwavering commitment to the heist, driven by a desire to leave a lasting legacy.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Collections</h4>
+                <ul>
+                    <li><a href="#">Men</a></li>
+                    <li><a href="#">Women</a></li>
+                    <li><a href="#">Accessories</a></li>
+                    <li><a href="#">Limited Edition</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Sustainability</a></li>
+                    <li><a href="#">Press</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="#">Contact</a></li>
+                    <li><a href="#">Shipping</a></li>
+                    <li><a href="#">Returns</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 HEIST. All rights reserved.</p>
+            <div class="made-by-glass">
+                MADE BY NIKIL MANGROLIYA
+            </div>
+            <div class="social-links">
+                <a href="https://www.instagram.com/nikilmangroliya_/" target="_blank" aria-label="Instagram">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                </a>
+                <a href="https://www.instagram.com/nikilmangroliya_/" target="_blank" aria-label="Twitter">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+                </a>
+                <a href="https://www.linkedin.com/in/nikil-mangroliya-135103286/" target="_blank" aria-label="LinkedIn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                </a>
+                <a href="https://www.instagram.com/nikilmangroliya_/" target="_blank" aria-label="GitHub">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button id="backToTop" class="back-to-top" aria-label="Back to top">
+        <i data-lucide="arrow-up" style="width:20px;height:20px;"></i>
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ===== INIT LUCIDE ICONS =====
+            lucide.createIcons();
+            
+            // ===== REGISTER GSAP PLUGINS =====
+            gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+            // ===== LENIS SMOOTH SCROLL INIT =====
+            const lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+                direction: 'vertical',
+                gestureDirection: 'vertical',
+                smooth: true,
+                smoothTouch: false,
+                touchMultiplier: 2,
+            });
+
+            // Sync Lenis with GSAP ScrollTrigger
+            lenis.on('scroll', ScrollTrigger.update);
+            gsap.ticker.add((time) => {
+                lenis.raf(time * 1000);
+            });
+            gsap.ticker.lagSmoothing(0);
+
+            // ===== LOADER =====
+            gsap.to('#loader', {
+                opacity: 0,
+                duration: 1,
+                delay: 3,
+                ease: 'power2.inOut',
+                onComplete: () => {
+                    document.getElementById('loader').style.display = 'none';
+                    initAllAnimations();
+                }
+            });
+
+            // ===== THREE.JS PARTICLES =====
+            function initParticles() {
+                const canvas = document.getElementById('particles-canvas');
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                const particleCount = 200;
+                const positions = new Float32Array(particleCount * 3);
+                const colors = new Float32Array(particleCount * 3);
+
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = (Math.random() - 0.5) * 15;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 15;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 10;
+
+                    const isRed = Math.random() > 0.75;
+                    colors[i * 3] = isRed ? 0.77 : 0.9;
+                    colors[i * 3 + 1] = isRed ? 0.12 : 0.9;
+                    colors[i * 3 + 2] = isRed ? 0.23 : 0.9;
+                }
+
+                const geometry = new THREE.BufferGeometry();
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                const material = new THREE.PointsMaterial({
+                    size: 0.025,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.5,
+                    blending: THREE.AdditiveBlending
+                });
+
+                const particles = new THREE.Points(geometry, material);
+                scene.add(particles);
+                camera.position.z = 5;
+
+            // ===== BROWSER STATE & VISIBILITY HANDLERS (Three.js) =====
+            let isTabActive = true;
+            document.addEventListener('visibilitychange', () => {
+                isTabActive = !document.hidden;
+            });
+
+                let time = 0;
+                function animate() {
+                    requestAnimationFrame(animate);
+                if (!isTabActive) return; // High-Performance Animation Check
+                    time += 0.0008;
+                    particles.rotation.y = time * 0.3;
+                    particles.rotation.x = Math.sin(time * 0.5) * 0.1;
+                    renderer.render(scene, camera);
+                }
+                animate();
+
+            // ===== VISUAL & VIEWPORT HANDLERS (Resize Debouncing) =====
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 150);
+            }, { passive: true });
+            }
+
+            // ===== GSAP ANIMATIONS WITH ZOOM IN & OUT EFFECTS =====
+            function initAllAnimations() {
+            // ===== HARDWARE & ENVIRONMENTAL HANDLERS =====
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReducedMotion) {
+                gsap.globalTimeline.timeScale(2.5); // Speed through animations for accessibility
+            }
+
+                // ---- HERO ENTRANCE ----
+                const heroTl = gsap.timeline();
+            heroTl.from('.hero-bg', { scale: 0.8, opacity: 0, duration: 2.5, ease: 'power3.out' }, 0)
+            .from('.hero-title', { y: 100, scale: 1.5, opacity: 0, duration: 2.0, ease: 'power3.out' }, 0.2)
+                .from('.hero-desc', { y: 40, opacity: 0, duration: 1.5, ease: 'power3.out' }, '-=1.8')
+                .from('.hero-cta', { y: 30, opacity: 0, duration: 1.2, ease: 'power3.out' }, '-=0.6')
+                .to('.scroll-hint', { opacity: 1, duration: 1.5, ease: 'power2.out' }, '-=0.3');
+
+                // ---- HERO PARALLAX ZOOM IN ON SCROLL ----
+                gsap.fromTo('.hero-bg img', 
+                    { scale: 1 },
+                    {
+                        scale: 1.35, y: 150,
+                        scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: 1.5 }
+                    }
+                );
+
+                gsap.to('.hero-content', {
+                    y: -150, opacity: 0,
+                    scrollTrigger: { trigger: '.hero', start: 'top top', end: '60% top', scrub: 2 }
+                });
+
+                // ---- INFO SECTION ----
+                const infoElements = '.info-label, .info-title, .info-text, .info-stat, .info-stat-label, .info-subtitle';
+                gsap.set(infoElements.split(', '), { opacity: 0, y: 40 });
+                
+                gsap.utils.toArray(infoElements.split(', ')).forEach((el, i) => {
+                    gsap.to(el, {
+                        opacity: 1, y: 0, duration: 1, delay: i * 0.12, ease: 'power3.out',
+                        scrollTrigger: { trigger: '.info-section', start: 'top 60%', toggleActions: 'play none none none' }
+                    });
+                });
+
+                // ---- INFO BG ZOOM OUT ON SCROLL ----
+                gsap.fromTo('.info-bg img', 
+                    { scale: 1.4 },
+                    {
+                        scale: 1, y: 100,
+                        scrollTrigger: { trigger: '.info-section', start: 'top bottom', end: 'bottom top', scrub: 1.5 }
+                    }
+                );
+
+                const statEl = document.querySelector('.info-stat');
+                const targetVal = parseInt(statEl.dataset.target);
+                ScrollTrigger.create({
+                    trigger: '.info-stat', start: 'top 80%', once: true,
+                    onEnter: () => {
+                        gsap.to(statEl, { innerHTML: targetVal, duration: 2.5, snap: { innerHTML: 1 }, ease: 'power2.out' });
+                    }
+                });
+
+                // ---- DISCOVERY SECTION ----
+                gsap.from('.discovery-title', { y: 100, opacity: 0, duration: 1.4, ease: 'power3.out', scrollTrigger: { trigger: '.discovery-section', start: 'top 55%' } });
+                gsap.from('.discovery-text p', { y: 40, opacity: 0, duration: 1, stagger: 0.2, ease: 'power3.out', scrollTrigger: { trigger: '.discovery-section', start: 'top 50%' } });
+                gsap.from('.discovery-ring', { scale: 0.5, opacity: 0, rotation: -30, duration: 2, ease: 'power3.out', scrollTrigger: { trigger: '.discovery-section', start: 'top 60%' } });
+
+                // ---- DISCOVERY BG ZOOM IN ON SCROLL ----
+                gsap.fromTo('.discovery-bg img', 
+                    { scale: 1 },
+                    {
+                        scale: 1.4, y: 80,
+                        scrollTrigger: { trigger: '.discovery-section', start: 'top bottom', end: 'bottom top', scrub: 1.5 }
+                    }
+                );
+
+                // ---- GALLERY SECTION ----
+                gsap.from('.gallery-header > *', { y: 40, opacity: 0, duration: 1, stagger: 0.15, ease: 'power3.out', scrollTrigger: { trigger: '.gallery-section', start: 'top 75%' } });
+                
+                // ---- GALLERY CONTAINER ZOOM IN ----
+                gsap.fromTo('.gallery-container', 
+                    { scale: 0.85, opacity: 0.5 },
+                    {
+                        scale: 1, opacity: 1,
+                        scrollTrigger: { trigger: '.gallery-section', start: 'top bottom', end: 'center center', scrub: 1.5 }
+                    }
+                );
+
+                const galleryItems = document.querySelectorAll('.gallery-item');
+                galleryItems.forEach(item => {
+                    item.addEventListener('mouseenter', () => {
+                        galleryItems.forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                    });
+                });
+
+                // ---- COLLECTIONS ----
+                gsap.from('.collections-header', { y: 60, opacity: 0, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: '.collections-section', start: 'top 70%' } });
+                
+                // ---- COLLECTIONS CARDS ZOOM IN ON SCROLL ----
+                gsap.utils.toArray('.collection-item').forEach((item, i) => {
+                    gsap.fromTo(item, 
+                        { scale: 0.8, y: 100, opacity: 0 },
+                        {
+                            scale: 1, y: 0, opacity: 1,
+                            scrollTrigger: { trigger: item, start: 'top 90%', end: 'center 70%', scrub: 1.5 }
+                        }
+                    );
+                });
+
+                // ---- NEWSLETTER ----
+                gsap.from('.newsletter-section > *', { y: 50, opacity: 0, duration: 1, stagger: 0.15, ease: 'power3.out', scrollTrigger: { trigger: '.newsletter-section', start: 'top 75%' } });
+
+                // ---- FOOTER ----
+                gsap.from('.footer-col', { y: 40, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '.footer', start: 'top 85%' } });
+
+                // ---- SIDE DOTS UPDATE ----
+                const sections = ['hero', 'info', 'discovery', 'gallery', 'collections'];
+                sections.forEach((id, index) => {
+                    ScrollTrigger.create({
+                        trigger: id === 'hero' ? '.hero' : `#${id}`, start: 'top center', end: 'bottom center',
+                        onEnter: () => updateDots(index), onEnterBack: () => updateDots(index)
+                    });
+                });
+
+                function updateDots(activeIndex) {
+                    document.querySelectorAll('.side-dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === activeIndex);
+                    });
+                }
+
+                // ---- NAV ACTIVE STATE ----
+                const navSections = ['hero', 'discovery', 'gallery', 'collections', 'newsletter'];
+                const navLinks = document.querySelectorAll('.nav-links a');
+                navSections.forEach((id, index) => {
+                    ScrollTrigger.create({
+                        trigger: id === 'hero' ? '.hero' : `#${id}`, start: 'top center', end: 'bottom center',
+                        onEnter: () => { navLinks.forEach(l => l.classList.remove('active')); if (navLinks[index]) navLinks[index].classList.add('active'); },
+                        onEnterBack: () => { navLinks.forEach(l => l.classList.remove('active')); if (navLinks[index]) navLinks[index].classList.add('active'); }
+                    });
+                });
+            }
+
+            // ===== MOBILE MENU TOGGLE =====
+            const menuBtn = document.querySelector('.nav-menu-btn');
+            const navLinksContainer = document.querySelector('.nav-links');
+
+            if (menuBtn && navLinksContainer) {
+                menuBtn.addEventListener('click', () => {
+                    menuBtn.classList.toggle('active');
+                    navLinksContainer.classList.toggle('open');
+                    document.body.style.overflow = navLinksContainer.classList.contains('open') ? 'hidden' : '';
+                
+                // ===== SMOOTH SCROLLING & INTERACTIVITY HANDLERS =====
+                navLinksContainer.classList.contains('open') ? lenis.stop() : lenis.start();
+                });
+            }
+
+            // ===== SMOOTH SCROLL (UPDATED FOR LENIS) =====
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        if (navLinksContainer && navLinksContainer.classList.contains('open')) {
+                            menuBtn.classList.remove('active');
+                            navLinksContainer.classList.remove('open');
+                            document.body.style.overflow = '';
+                        }
+                        
+                        lenis.scrollTo(target, {
+                            offset: 0,
+                            duration: 1.5,
+                            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+                        });
+                    }
+                });
+            });
+
+            // ===== SCROLL EVENTS (NAV & BACK TO TOP) =====
+            window.addEventListener('scroll', () => {
+                const nav = document.querySelector('.nav');
+                const backToTopBtn = document.getElementById('backToTop');
+                
+                nav.classList.toggle('scrolled', window.scrollY > 50);
+
+                if (backToTopBtn) {
+                    backToTopBtn.classList.toggle('visible', window.scrollY > 600);
+                }
+            });
+
+            // ===== BACK TO TOP CLICK =====
+            document.getElementById('backToTop')?.addEventListener('click', () => {
+                lenis.scrollTo(0, { duration: 1.5 });
+            });
+
+        // ===== INPUT & INTERACTION HANDLERS (Throttled Passive Listener) =====
+        let isMouseMoving = false;
+        document.addEventListener('mousemove', (e) => {
+            if (isMouseMoving) return;
+            isMouseMoving = true;
+            requestAnimationFrame(() => {
+                const moveX = (e.clientX - window.innerWidth / 2) * 0.02;
+                const moveY = (e.clientY - window.innerHeight / 2) * 0.02;
+                gsap.to('.hero-content', { x: moveX, y: moveY, duration: 1.5, ease: 'power2.out' });
+                isMouseMoving = false;
+            });
+        }, { passive: true });
+
+            initParticles();
+
+            // ===== BACKGROUND MUSIC SAFE AUTOPLAY =====
+            const bgMusic = document.getElementById('bg-music');
+            const musicBtn = document.getElementById('music-btn');
+            const musicIcon = document.getElementById('music-icon');
+            const musicLabel = document.getElementById('music-label');
+            bgMusic.volume = 0.35;
+
+            const syncAudioState = () => {
+                if (bgMusic.paused) {
+                    musicIcon.textContent = '♪';
+                    musicLabel.textContent = 'MUTED';
+                    musicBtn.classList.add('muted');
+                } else {
+                    musicIcon.textContent = '♪';
+                    musicLabel.textContent = 'MUSIC';
+                    musicBtn.classList.remove('muted');
+                }
+            };
+
+        // ===== BROWSER STATE & VISIBILITY HANDLERS (GSAP & Audio Sync) =====
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                gsap.ticker.sleep();
+                if (!bgMusic.paused) {
+                    bgMusic.pause();
+                    bgMusic.dataset.wasPlaying = "true";
+                }
+            } else {
+                gsap.ticker.wake();
+                if (bgMusic.dataset.wasPlaying === "true") {
+                    bgMusic.play().then(syncAudioState).catch(() => {});
+                }
+            }
+        });
+
+            // Attempt to autoplay
+            const playPromise = bgMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    syncAudioState();
+                }).catch(error => {
+                    console.log("Autoplay blocked. Waiting for user interaction to start audio.");
+                    syncAudioState();
+                    
+                    document.body.addEventListener('click', function fallbackAudio() {
+                        if(bgMusic.paused) {
+                            bgMusic.play().then(syncAudioState);
+                        }
+                        document.body.removeEventListener('click', fallbackAudio);
+                    }, { once: true });
+                });
+            }
+
+            // Button Click Handler
+            musicBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                if (bgMusic.paused) {
+                    bgMusic.play();
+                } else {
+                    bgMusic.pause();
+                }
+                syncAudioState();
+            });
+        });
+    </script>
+</body>
+</html>
